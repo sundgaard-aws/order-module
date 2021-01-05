@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
+	<link rel="stylesheet" href="./resources/css/order.css" type="text/css">	
+	
+	<script type="text/javascript" src="./resources/js/lib/jquery-2.2.2.min.js"></script>
+	<script type="text/javascript" src="./resources/js/lib/jquery-ui.min.js"></script>
+	<script type="text/javascript" src="./resources/js/order.js"></script>
+</head>
+<body>
+
+<div id="container" class="container-fluid" tabindex='100'>
+	<img id="toggleDebug" src="./resources/images/bug-48.png" class="commandButton active" style="position: absolute; top: 14rem; left: 4rem; width: 24px; height: 24px;">
+
+	<div id="loginContainer" class="function row" style="height: 160px; top:22rem;">
+		<div style="margin-top: 10px;; margin-left: 10px;">
+			<div style="margin: 4px;"><div class="label">Login:</div><input id="login" type="text" value=""/></div>
+			<div style="margin: 4px;"><div class="label">Password:</div><input id="password" type="password" value="" /></div>
+			<div style="color: red; text-align: left; margin-left: 124px;" id="loginStatus"></div>
+			<div id="btnLogin" class="btn" style="background-color: green; margin-left: 124px;">Login</div>
+			<div id="btnShowCreateLogin" style="margin-left: 124px; text-decoration: underline; cursor:pointer;">Create new login</div>
+		</div>
+	</div>
+	
+	<div id="createLoginContainer" class="function" style="height: 160px; top:22rem;display: none;">
+		<div style="margin-top: 10px;; margin-left: 10px;">
+			<div style="margin: 4px;"><div class="label" style="width: 220px;">New login:</div><input id="newLogin" type="text" value=""/></div>
+			<div style="margin: 4px;"><div class="label" style="width: 220px;">New Password:</div><input id="newPassword" type="password" value="" /></div>
+			<div style="margin: 4px;"><div class="label" style="width: 220px;">Repeated Password:</div><input id="newRepeatedPassword" type="password" value="" /></div>
+
+			<div id="btnCreateLogin" class="btn" style="background-color: green;">Create Login</div>
+			<div id="statusMessage" class="label"></div>
+		</div>			
+	</div>
+
+	
+	<div id="orderContainer" class="function" style="display:none; height: 56rem; width:70rem; top: 1rem;">		
+		<div style="margin-top: 4px; ">
+            <div class="row headerRow" style="margin-left: 2px; margin-right: 2px; border-radius: 4px;">
+                <div class="col-sm-9">Name</div>
+                <div class="col-sm-3">Score</div>
+			</div>
+			<div id="orderItems"></div>
+		</div>
+		<!-- Templates -->
+        <div id="highscoreItemTemplate" class="row template highscoreItem" style="margin-left: 2px; margin-right: 2px; height: 4rem; line-height: 4rem;">
+            <div class="col-sm-9 highScoreName" style="font-size: 4rem;">[Name]</div>
+            <div class="col-sm-3 highScoreScore" style="font-size: 4rem;">[Score]</div>
+        </div>
+	</div>
+
+	<div id="topToolbar" class="function topToolbar container-fluid">
+		<div class="row">
+			<div class="col">
+				<div class="row align-items-center" style="height: 10rem; line-height: 10rem;">
+					<div class="col-sm-4">
+						<div id="" style="font-size: 7rem">Michael</div>
+					</div>
+					<div class="col-sm-4">
+						<div id="" style="font-size: 7rem"></div>
+					</div>
+					<div class="col-sm-4">
+						<div style="font-size: 7rem"></div>
+					</div>
+				</div>
+				<div class="row align-items-center" style="height: 2rem; line-height: 2rem; margin-top:-2rem;">
+					<div class="col-sm-4">
+						<div style="font-size: 1rem">User</div>
+					</div>
+					<div class="col-sm-4">
+						<div style="font-size: 1rem">Logout</div>
+					</div>
+					<div class="col-sm-4">
+						<div style="font-size: 1rem">Settings</div>
+					</div>
+				</div>				
+			</div>
+		</div>
+	</div>	
+	
+	<div id="bottomToolbar" class="function bottomToolbar container-fluid">
+		<div class="row">
+			<div class="col"></div>
+			<div class="col-md-auto">
+				<div class="row align-items-center" style="height: 6rem;">
+					<div class="col">
+						<img class="commandButton active img-fluid" src="./resources/images/.png" data-action="createOrder" style="margin-left: 4px;" alt="createOrder">
+					</div>
+					<div class="col">
+						<img class="commandButton active img-fluid" src="./resources/images/.png" data-action="showOrders" style="margin-left: 4px;" alt="showOrders">
+					</div>
+					<div class="col">
+						<img class="commandButton active img-fluid" src="./resources/images/.png" data-action="" style="margin-left: 4px;" alt="">
+					</div>
+					<div class="col">
+						<img class="commandButton img-fluid" src="./resources/images/.png" data-action="" style="margin-left: 4px;" alt="">
+					</div>
+					<div class="col">
+						<img class="commandButton img-fluid" src="./resources/images/.png" data-action="" style="margin-left: 4px;" alt="">
+					</div>
+				</div>
+			</div>
+			<div class="col"></div>
+		</div>
+	</div>
+
+	<!-- DEBUG VIEWS -->
+	<div id="debugInfo" style="display:none; position: fixed; z-index: 1000; top: 10px; right: 10px; width: 360px; height: 240px; margin: 0px; overflow: auto; background-color: rgba(0,0,0,0.7); color: rgb(70, 184, 17); border:solid 2px green; font-family: Consolas; font-size: 10pt;"></div>
+	<div id="jsonInfo" style="display:none; position: fixed; z-index: 1000; bottom: 10px; right: 10px; width: 660px; height: 240px; margin: 0px; overflow: auto; background-color: rgba(0,0,0,0.7); color: rgb(70, 184, 17); border:solid 2px green; font-family: Consolas; font-size: 10pt;"></div>
+</div>
+
+</body>
+</html>

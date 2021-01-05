@@ -1,0 +1,6 @@
+local
+**/node_modules
+**/package-lock.json
+**/cdk-out
+bin
+cdk.context.json
