@@ -131,8 +131,8 @@ select {
 
 #container {
 	width: 1200px; height: 800px;
-	background-image: url('../images/'); background-repeat: no-repeat;
-	background-size: 1200px 800px;
+	background-image: url('../images/enVista-tn-1120x630.jpeg'); background-repeat: no-repeat;
+	background-size: 1200px;
 	margin: auto;
 	
 	position: absolute;

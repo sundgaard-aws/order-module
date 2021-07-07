@@ -9,8 +9,10 @@ exports.handler = function(event, context, callback) {
     console.log(JSON.stringify(event));
     //AWS.config.update({region: 'eu-central-1'});
     var method = event.requestContext.http.method;
+    var origin = event.headers.origin;
+    var referer = event.headers.referer;
     if(method == "OPTIONS") {
-        respondOK({}, callback);
+        preFlightResponse(origin, referer, callback);
         return;
     }
     console.log("method="+method);
@@ -26,10 +28,10 @@ exports.handler = function(event, context, callback) {
     };
       
     ddb.scan(params, function(err, data) {
-        if (err) { console.log(err); respondError(500, err, callback); }
+        if (err) { console.log(err); respondError(origin, 500, err, callback); }
         else {
             highScores = sortHighScores(data.Items);
-            respondOK(highScores, callback);
+            respondOK(origin, highScores, callback);
         }
     });
 
@@ -55,13 +57,20 @@ function sortHighScores(highScoresUnsorted) {
     return sorted.sort().reverse();
 };
 
-function respondOK(data, callback) {
+function tweakOrigin(origin) {
+    var tweakedOrigin = "-";
+    ALLOWED_ORIGINS.forEach(allowedOrigin => {
+        if(allowedOrigin == origin) tweakedOrigin = allowedOrigin;
+    });
+    return tweakedOrigin;
+}
+
+function preFlightResponse(origin, callback) {
     const response = {
         statusCode: 200,
-        body: JSON.stringify({ response: 'Got high score', data: data }),
         headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : "*", // Required for CORS support to work
+            'Access-Control-Allow-Origin' :   tweakOrigin(origin),
             'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
             'Access-Control-Allow-Headers' : "content-type"
         },
@@ -69,13 +78,27 @@ function respondOK(data, callback) {
     callback(null, response);
 }
 
-function respondError(errorCode, errorMessage, callback) {
+function respondOK(origin, data, callback) {
+    const response = {
+        statusCode: 200,
+        body: JSON.stringify({ response: 'Got high score', data: data }),
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin' : tweakOrigin(origin),
+            'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
+            'Access-Control-Allow-Headers' : "content-type"
+        },
+    };
+    callback(null, response);
+}
+
+function respondError(origin, errorCode, errorMessage, callback) {
     const response = {
         statusCode: errorCode,
         body: JSON.stringify({ response: errorMessage }),
         headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : "*", // Required for CORS support to work
+            'Access-Control-Allow-Origin' : tweakOrigin(origin),
             'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
             'Access-Control-Allow-Headers' : "content-type"
         },

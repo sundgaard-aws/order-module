@@ -13,6 +13,8 @@ import { SSMHelper } from './ssm-helper';
 import { ApiEventSource } from '@aws-cdk/aws-lambda-event-sources';
 import { HttpApi, HttpMethod } from '@aws-cdk/aws-apigatewayv2';
 import { LambdaProxyIntegration } from '@aws-cdk/aws-apigatewayv2-integrations';
+import { CfnOutput, CfnParameter } from '@aws-cdk/core';
+import { LambdaHttpApi } from './lambda-http-api-construct';
 
 export class ComputeStack extends Core.Stack {
     private runtime:Lambda.Runtime = Lambda.Runtime.NODEJS_12_X;
@@ -22,11 +24,14 @@ export class ComputeStack extends Core.Stack {
     constructor(scope: Core.Construct, id: string, vpc: IVpc, apiSecurityGroup: ISecurityGroup, props?: Core.StackProps) {
         super(scope, id, props);
 
+        //var inputParam1 = new CfnParameter(this, "input-param-1", {description:"input-1"}); console.log("inputParam1=", inputParam1.value);
+        
         this.apiRole = this.buildAPIRole();
         this.createLoginFunction(apiSecurityGroup, vpc);
         this.createCreateLoginFunction(apiSecurityGroup, vpc);
         this.createStoreOrderFunction(apiSecurityGroup, vpc);
         this.createGetOrderFunction(apiSecurityGroup, vpc);
+        //this.createDummyFunction(apiSecurityGroup, vpc);
     }
 
     private createLambdaFunction(apiSecurityGroup: ISecurityGroup, name:string, handlerMethod:string, assetPath:string, vpc:EC2.IVpc):Lambda.Function {
@@ -34,22 +39,23 @@ export class ComputeStack extends Core.Stack {
         var lambdaFunction = new Lambda.Function(this, MetaData.PREFIX+name, { 
             functionName: MetaData.PREFIX+name, vpc: vpc, code: codeFromLocalZip, handler: handlerMethod, runtime: this.runtime, memorySize: 256, 
             timeout: Core.Duration.seconds(20), role: this.apiRole, securityGroups: [apiSecurityGroup],
-            tracing: Lambda.Tracing.ACTIVE,
+            tracing: Lambda.Tracing.ACTIVE
         });
         
         const proxyIntegration = new LambdaProxyIntegration({
-            handler: lambdaFunction,
-            });
+            handler: lambdaFunction
+        });
             
         const httpApi = new HttpApi(this, MetaData.PREFIX+name+"-api");
         
         httpApi.addRoutes({
-        path: "/" + name,
-        methods: [ HttpMethod.POST, HttpMethod.OPTIONS ],
-        integration: proxyIntegration,
+            path: "/" + MetaData.PREFIX+name,
+            methods: [ HttpMethod.POST, HttpMethod.OPTIONS ],
+            integration: proxyIntegration
         });
         
         Core.Tags.of(lambdaFunction).add(MetaData.NAME, MetaData.PREFIX+name);
+        new CfnOutput(this, MetaData.PREFIX+name+"-out", {description:"apiEndpointUrl", value:httpApi.apiEndpoint+"/"+httpApi.httpApiName});
         return lambdaFunction;
     } 
 
@@ -68,6 +74,12 @@ export class ComputeStack extends Core.Stack {
     private createGetOrderFunction(apiSecurityGroup: ISecurityGroup, vpc: IVpc):Lambda.Function {
         return this.createLambdaFunction(apiSecurityGroup, "get-order-fn", "index.handler", "../src/api/get-order", vpc);
     }    
+
+    private createDummyFunction(apiSecurityGroup: ISecurityGroup, vpc: IVpc):LambdaHttpApi {
+        return new LambdaHttpApi(this, MetaData.PREFIX+"lambda-http-api", {
+            apiRole: this.apiRole, apiSecurityGroup: apiSecurityGroup, assetPath: "../src/api/login", functionName: "dummy-fn", handlerMethod: "index.handler", vpc: vpc
+        })
+    }       
     
     private createStepFunctionsTrigger(apiSecurityGroup: ISecurityGroup, vpc: IVpc, queue:SQS.IQueue) {
         var sfnLambdaTriggerFunction = this.createLambdaFunction(apiSecurityGroup, "invoke-sfn-api-lam", "index.mainHandler", "assets/invoke-sfn-api/", vpc);

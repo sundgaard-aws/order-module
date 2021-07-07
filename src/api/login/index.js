@@ -2,7 +2,7 @@ const AWS = require("aws-sdk");
 const UUID = require('uuid');
 const LOGIN_TABLE_NAME = "ygg-om-login";
 const ORDER_TABLE_NAME = "ygg-om-order"
-const ALLOWED_ORIGINS = ["http://localhost", "http://aws..."]
+const ALLOWED_ORIGINS = ["http://localhost", "http://localhost:8080", "http://localhost:8081", "http://aws..."]
 
 // Callback is (error, response)
 exports.handler = function(event, context, callback) {
@@ -103,16 +103,20 @@ function getHeroInfo(userGuid, callback) {
     });
 }
 
-function preFlightResponse(origin, referer, callback) {
-    var tweakedOrigin = "";
-    if(origin == ALLOWED_ORIGINS[0] || origin == ALLOWED_ORIGINS[1])
-        tweakedOrigin = origin;
+function tweakOrigin(origin) {
+    var tweakedOrigin = "-";
+    ALLOWED_ORIGINS.forEach(allowedOrigin => {
+        if(allowedOrigin == origin) tweakedOrigin = allowedOrigin;
+    });
+    return tweakedOrigin;
+}
 
+function preFlightResponse(origin, referer, callback) {
     const response = {
         statusCode: 200,
         headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' :   tweakedOrigin,
+            'Access-Control-Allow-Origin' :   tweakOrigin(origin),
             'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
             'Access-Control-Allow-Headers' : "content-type"
         },
@@ -121,17 +125,13 @@ function preFlightResponse(origin, referer, callback) {
 }
 
 function respondOK(origin, data, callback) {
-    var tweakedOrigin = "";
-    if(origin == ALLOWED_ORIGINS[0] || origin == ALLOWED_ORIGINS[1])
-        tweakedOrigin = origin;
-
     const response = {
         statusCode: 200,
         body: JSON.stringify({ response: 'Login completed', data: data }),
         headers: {
             'Content-Type': 'application/json',
             //'Access-Control-Allow-Origin' : "*", // Required for CORS support to work
-            'Access-Control-Allow-Origin' : tweakedOrigin,
+            'Access-Control-Allow-Origin' : tweakOrigin(origin),
             'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
             'Access-Control-Allow-Headers' : "content-type"
         },
@@ -140,16 +140,12 @@ function respondOK(origin, data, callback) {
 }
 
 function respondError(origin, errorCode, errorMessage, callback) {
-    var tweakedOrigin = "";
-    if(origin == ALLOWED_ORIGINS[0] || origin == ALLOWED_ORIGINS[1])
-        tweakedOrigin = origin;
-
     const response = {
         statusCode: errorCode,
         body: JSON.stringify({ response: errorMessage }),
         headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : tweakedOrigin, // Required for CORS support to work
+            'Access-Control-Allow-Origin' : tweakOrigin(origin),
             'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
             'Access-Control-Allow-Headers' : "content-type"
         },

@@ -1,6 +1,6 @@
 const AWS = require("aws-sdk");
-const UUID = require('uuid');
-const ATV = require('atv');
+const UUID = require("uuid");
+const ATV = require("om-atv");
 
 const LOGIN_TABLE_NAME = "ygg-om-login";
 const ORDER_TABLE_NAME = "ygg-om-order"
@@ -12,18 +12,23 @@ exports.handler = function(event, context, callback) {
     //dynamo.putItem(JSON.parse(event.body), done);
     //dynamo.updateItem(JSON.parse(event.body), done); 
     var method = event.requestContext.http.method;
+    var origin = event.headers.origin;
+    var referer = event.headers.referer;
     if(method == "OPTIONS") {
-        respondOK({}, callback);
+        preFlightResponse(origin, referer, callback);
         return;
     }
+    console.log("method="+method);
       
     var userInfo = JSON.parse(event.body);
-    ATV.validateAccessToken(userInfo.userName, userInfo.accessToken, function(valid, reason) {
+    var atv = ATV.AccessTokenValidator();
+    atv.LOGIN_TABLE_NAME = LOGIN_TABLE_NAME;
+    atv.validateAccessToken(userInfo.userName, userInfo.accessToken, function(valid, reason) {
         if(!valid) respondError(401, reason, callback);
         var round = playRound(userInfo, function(round) {
             if(round.turnsUsed < maxTurns) {
                 var params = {
-                    TableName: 'xmas-fun-score',
+                    TableName: ORDER_TABLE_NAME,
                     Key: { "userGuid" : userInfo.userGuid },
                     UpdateExpression: 'set score = :score, turnsUsed = if_not_exists(turnsUsed, :start) + :inc',
                     /*ConditionExpression: '#a < :MAX',
@@ -57,12 +62,12 @@ exports.handler = function(event, context, callback) {
 
 function insertHighScore(userInfo, round, callback) {
     var ddb = new AWS.DynamoDB({apiVersion: '2012-08-10'});
-    console.log("Inside insertHighScore()");
+    console.log("Inside ORDER_TABLE_NAME()");
     console.log("totalScore=" + round.totalScore);
     console.log(JSON.stringify(round));
     var scoreGuid = UUID.v4();
     var params = {
-        TableName: 'xmas-fun-high-score',
+        TableName: ORDER_TABLE_NAME,
         Item: {
           'scoreGuid': {S: scoreGuid},
           'userGuid': {S: userInfo.userGuid},
@@ -177,13 +182,20 @@ function getUserScore(userGuid, callback) {
     });
 }
 
-function respondOK(data, callback) {
+function tweakOrigin(origin) {
+    var tweakedOrigin = "-";
+    ALLOWED_ORIGINS.forEach(allowedOrigin => {
+        if(allowedOrigin == origin) tweakedOrigin = allowedOrigin;
+    });
+    return tweakedOrigin;
+}
+
+function preFlightResponse(origin, callback) {
     const response = {
         statusCode: 200,
-        body: JSON.stringify({ response: 'Round played', data: data }),
         headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : "*", // Required for CORS support to work
+            'Access-Control-Allow-Origin' :   tweakOrigin(origin),
             'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
             'Access-Control-Allow-Headers' : "content-type"
         },
@@ -191,13 +203,27 @@ function respondOK(data, callback) {
     callback(null, response);
 }
 
-function respondError(errorCode, errorMessage, callback) {
+function respondOK(origin, data, callback) {
+    const response = {
+        statusCode: 200,
+        body: JSON.stringify({ response: 'Round played', data: data }),
+        headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin' : tweakOrigin(origin),
+            'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
+            'Access-Control-Allow-Headers' : "content-type"
+        },
+    };
+    callback(null, response);
+}
+
+function respondError(origin, errorCode, errorMessage, callback) {
     const response = {
         statusCode: errorCode,
         body: JSON.stringify({ response: errorMessage }),
         headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin' : "*", // Required for CORS support to work
+            'Access-Control-Allow-Origin' : tweakOrigin(origin),
             'Access-Control-Allow-Credentials' : true, // Required for cookies, authorization headers with HT
             'Access-Control-Allow-Headers' : "content-type"
         },
